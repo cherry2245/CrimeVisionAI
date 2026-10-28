@@ -21,23 +21,21 @@ def capabilities():
     return jsonify({
         'status': 'operational',
         'modules': {
-            'image_analysis': 'available',
-            'video_analysis': 'available',
-            'audio_transcription': 'available',
-            'llm_reasoning': 'configured' if settings.GROQ_API_KEY else 'unconfigured',
-            'report_generation': 'available',
+            'evidence_intake': 'available',
+            'image_analysis': 'configured' if settings.GEMINI_API_KEY else 'needs_api_key',
+            'video_review': 'configured' if settings.GEMINI_API_KEY else 'needs_api_key',
+            'audio_transcription': 'configured' if settings.GEMINI_API_KEY else 'needs_api_key',
+            'llm_reasoning': 'configured' if settings.GEMINI_API_KEY else 'needs_api_key',
+            'report_generation': 'unavailable',
             'timeline': 'available'
         },
         'models': {
-            'detection': settings.DETECTION_MODEL,
-            'whisper': settings.WHISPER_MODEL,
-            'captioning': settings.CAPTIONING_MODEL,
-            'groq': settings.GROQ_MODEL if settings.GROQ_API_KEY else None
+            'gemini': settings.GEMINI_MODEL if settings.GEMINI_API_KEY else None,
         },
         'supported_formats': {
-            'images': ['jpg', 'jpeg', 'png', 'bmp', 'webp'],
-            'videos': ['mp4', 'avi', 'mov', 'mkv'],
-            'audio': ['wav', 'mp3', 'm4a', 'flac']
+            'images': ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'],
+            'videos': ['mp4', 'avi', 'mov', 'mkv', 'webm'],
+            'audio': ['wav', 'mp3', 'm4a', 'flac', 'ogg', 'aac']
         },
         'limits': {
             'max_upload_size_mb': settings.MAX_UPLOAD_SIZE // (1024 * 1024),

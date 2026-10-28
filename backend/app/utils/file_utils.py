@@ -1,15 +1,21 @@
 import hashlib
-import os
 import uuid
-from werkzeug.utils import secure_filename
-from flask import request, jsonify, current_app
-from app.extensions import db
-from app.models import Evidence
 
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp'}
+MEDIA_EXTENSIONS = {
+    'image': {'png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp'},
+    'video': {'mp4', 'avi', 'mov', 'mkv', 'webm'},
+    'audio': {'wav', 'mp3', 'm4a', 'flac', 'ogg', 'aac'},
+}
+
+def media_type_for(filename):
+    if '.' not in filename:
+        return None
+    extension = filename.rsplit('.', 1)[1].lower()
+    return next((kind for kind, extensions in MEDIA_EXTENSIONS.items() if extension in extensions), None)
+
 
 def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+    return media_type_for(filename) is not None
 
 def calculate_file_hash(file_path):
     sha256_hash = hashlib.sha256()

@@ -1,8 +1,8 @@
 # CrimeVision AI
 
-Intelligent Multimodal Forensic Analysis Platform
+Local evidence intake and decision-support prototype
 
-CrimeVision AI is an AI-powered forensic analysis and decision-support platform that processes images, videos, audio recordings, and natural-language queries using computer vision, speech recognition, and large language models.
+CrimeVision AI is a local prototype for evidence intake and forensic decision-support workflows. The implemented core securely catalogues image, video, and audio files, records SHA-256 hashes, previews stored evidence, and exports an inventory. Analysis interfaces are clearly marked when their required validated services are not configured.
 
 ## ⚠️ Important Disclaimer
 
@@ -22,11 +22,8 @@ CrimeVision AI is an AI-powered forensic analysis and decision-support platform 
 - Flask (REST API)
 - SQLAlchemy (Database)
 - SQLite (Local development)
-- PyTorch (Model inference)
-- OpenCV (Image/video processing)
-- Faster-Whisper (Audio transcription)
-- Groq API (LLM reasoning)
-- ReportLab (PDF generation)
+- SHA-256 file integrity tracking
+- SQLite local development database
 
 ### Frontend
 - React 18
@@ -35,9 +32,7 @@ CrimeVision AI is an AI-powered forensic analysis and decision-support platform 
 - Tailwind CSS
 - Lucide React (Icons)
 - React Router (Navigation)
-- Axios (API communication)
-- Recharts (Analytics)
-- Three.js / React Three Fiber (3D visualization)
+- Fetch API (backend communication)
 
 ## Project Structure
 
@@ -115,10 +110,12 @@ pip install -r requirements.txt
 Copy .env.example .env
 ```
 
-7. Edit `.env` and configure your settings (optional for initial setup):
+7. Add your Google Gemini API key to `.env` to enable image, audio, video review, and grounded assistant questions:
 ```env
-GROQ_API_KEY=your_api_key_here
+GEMINI_API_KEY=your_api_key_here
+GEMINI_MODEL=gemini-3.8-flash
 ```
+The key stays on the backend. Selected media is sent to Google Gemini only when an investigator starts a review.
 
 8. Start the backend server:
 ```powershell
@@ -136,7 +133,7 @@ cd frontend
 
 2. Install dependencies:
 ```powershell
-npm install
+npm.cmd install
 ```
 
 3. Create environment configuration:
@@ -146,10 +143,28 @@ Copy .env.example .env
 
 4. Start the development server:
 ```powershell
-npm run dev
+npm.cmd run dev
 ```
 
 The frontend will start on `http://localhost:5173`
+
+## Streamlit Demo
+
+This repository includes a Python Streamlit demo (`streamlit_app.py`) that reuses the Flask evidence and analysis services. The React/Vite interface remains available separately. Streamlit Community Cloud requires a GitHub repository and a root-level dependency file; this repository provides `requirements.txt` for the demo.
+
+Run the demo locally from the repository root:
+```powershell
+python -m pip install -r requirements.txt
+python -m streamlit run streamlit_app.py
+```
+
+To publish it on Streamlit Community Cloud:
+1. Push this repository to GitHub.
+2. Sign in at [share.streamlit.io](https://share.streamlit.io) with GitHub and choose **Create app**.
+3. Select this repository, branch `main`, and entrypoint `streamlit_app.py`.
+4. Add `GEMINI_API_KEY` under the app's **Secrets** settings only if you want hosted Gemini analysis enabled. Never commit the key to GitHub.
+
+The hosted demo stores evidence in its app filesystem, which is temporary. Do not use it as a production evidence repository.
 
 ### Verify Installation
 
@@ -183,43 +198,31 @@ Expected response:
 - Evidence metadata management
 
 ### Image Analysis
-- Object detection
-- Scene captioning
-- Bounding box visualization
-- Confidence filtering
+- Image preview from the evidence vault
+- Gemini visual review with observations and limitations; no bounding-box detection or person identification
 
 ### Video Analysis
-- Frame extraction and sampling
-- Object detection on frames
-- Timestamped event detection
-- Processing job management
+- Video evidence intake and integrity tracking
+- Gemini video event review with approximate media timestamps; continuous tracking is not implemented
 
 ### Audio Analysis
-- Speech-to-text transcription
-- Timestamped transcript segments
-- Transcript search and export
+- Audio evidence intake and integrity tracking
+- Gemini audio transcription and summary
 
 ### Forensic Timeline
-- Unified event timeline
-- Cross-modal evidence correlation
-- Event filtering and navigation
+- Chronological evidence intake and completed analysis events
+- Video segment times are model estimates, not exact forensic timestamps
 
 ### AI Investigation Assistant
-- Evidence-grounded queries
-- Persistent conversation history
-- Structured responses with citations
-- Hypothesis generation
+- Questions are grounded in selected evidence metadata and saved AI review results
+- Conversation history lasts only for the browser session
 
 ### 3D Scene Viewer
-- Interactive 3D visualization
-- Detected object markers
-- Scene layout reconstruction
+- Placeholder with requirements described; no scene reconstruction is implemented
 
-### Forensic Reports
-- Professional PDF generation
-- Evidence inventory
-- Analysis results
-- AI-generated content disclaimer
+### Reports
+- CSV export of the evidence inventory, including file hashes
+- PDF report generation is not implemented
 
 ## API Endpoints
 
@@ -227,39 +230,27 @@ Expected response:
 - `GET /api/v1/health` - Backend health check
 - `GET /api/v1/capabilities` - System capabilities
 
-### Evidence
-- `POST /api/v1/evidence/upload` - Upload evidence
-- `GET /api/v1/evidence` - List evidence
-- `GET /api/v1/evidence/{id}` - Get evidence details
-- `DELETE /api/v1/evidence/{id}` - Delete evidence
-
-### Analysis
-- `POST /api/v1/analysis/image/{id}` - Run image analysis
-- `POST /api/v1/analysis/video/{id}` - Start video processing
-- `POST /api/v1/analysis/audio/{id}` - Start transcription
-
-### Timeline
-- `GET /api/v1/timeline` - Retrieve timeline events
-- `POST /api/v1/timeline/events` - Create event
-
-### AI Assistant
-- `POST /api/v1/chat/conversations` - Create conversation
-- `GET /api/v1/chat/conversations/{id}` - Get conversation
-- `POST /api/v1/chat/conversations/{id}/messages` - Send message
-
-### Reports
-- `POST /api/v1/reports` - Generate report
-- `GET /api/v1/reports/{id}/download` - Download PDF
+### Evidence and image analysis
+- `POST /api/v1/evidence/upload` - Upload image, video, or audio evidence
+- `GET /api/v1/evidence` - List evidence (supports `page` and `per_page`)
+- `GET /api/v1/evidence/{id}` - Get evidence metadata
+- `GET /api/v1/evidence/{id}/file` - Preview or retrieve the stored file
+- `DELETE /api/v1/evidence/{id}` - Delete evidence and its analysis history
+- `POST /api/v1/analysis/image/{id}` - Review an image with Gemini
+- `POST /api/v1/analysis/audio/{id}` - Transcribe and summarize audio with Gemini
+- `POST /api/v1/analysis/video/{id}` - Summarize a video and return approximate described segments
+- `GET /api/v1/analysis/{id}` - Get analysis run details
+- `GET /api/v1/timeline` - Retrieve intake and completed analysis events
+- `POST /api/v1/chat/ask` - Ask a question grounded in evidence metadata and saved analysis
 
 ## Development Milestones
 
 - ✅ Milestone 1: Project Foundation
-- ⏳ Milestone 2: Image Analysis
-- ⏳ Milestone 3: Audio Analysis
-- ⏳ Milestone 4: Video Analysis
-- ⏳ Milestone 5: Multimodal Intelligence
-- ⏳ Milestone 6: Reporting and Visualization
-- ⏳ Milestone 7: Testing and Deployment
+- ✅ Milestone 2: Gemini multimodal image/audio/video review
+- ✅ Milestone 3: Evidence-grounded assistant and analysis timeline
+- ⏳ Milestone 4: Validated object detection and continuous video tracking
+- ⏳ Milestone 5: Persistent chat, PDF reporting, and scene visualization
+- ⏳ Milestone 7: Authentication, validation, and deployment hardening
 
 ## Troubleshooting
 
@@ -280,11 +271,8 @@ If port 5000 or 5173 is in use, change the port in:
 - Backend: `backend/.env` (PORT variable)
 - Frontend: `frontend/vite.config.ts` (server.port)
 
-### Missing API Keys
-The application will start without Groq API key configured. AI-powered features will show informative messages when unavailable.
-
-### Model Download Failures
-Large model downloads may fail due to network or disk space. Configure smaller models in `.env` or ensure adequate disk space and network connectivity.
+### Gemini analysis reports an error
+Confirm `GEMINI_API_KEY` is set in `backend/.env`, restart the backend, and check Google AI Studio for API access and quota. Gemini outputs are advisory; video segment timestamps are approximate, and continuous object tracking is not provided.
 
 ## Security Considerations
 

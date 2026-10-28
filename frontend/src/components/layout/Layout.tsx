@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { 
   LayoutDashboard, 
@@ -16,11 +16,20 @@ import {
   Activity,
   Server
 } from 'lucide-react'
+import { api } from '../../services/api'
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const location = useLocation()
   const [backendStatus, setBackendStatus] = useState<'connected' | 'disconnected'>('disconnected')
+
+  useEffect(() => {
+    let active = true
+    const check = () => api.health().then(() => { if (active) setBackendStatus('connected') }).catch(() => { if (active) setBackendStatus('disconnected') })
+    void check()
+    const timer = window.setInterval(check, 30000)
+    return () => { active = false; window.clearInterval(timer) }
+  }, [])
 
   const navItems = [
     { path: '/', icon: LayoutDashboard, label: 'Overview' },

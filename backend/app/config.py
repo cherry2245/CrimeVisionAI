@@ -31,9 +31,10 @@ class Settings:
     # CORS
     CORS_ORIGINS: str = os.getenv("CORS_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173")
     
-    # AI Services
-    GROQ_API_KEY: str = os.getenv("GROQ_API_KEY", "")
-    GROQ_MODEL: str = os.getenv("GROQ_MODEL", "llama3-70b-8192")
+    # Gemini multimodal AI. The key is read by the backend only and is never
+    # returned to the frontend or written to application logs.
+    GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
+    GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
     
     # Object Detection
     DETECTION_MODEL: str = os.getenv("DETECTION_MODEL", "facebook/detr-resnet-50")
